@@ -3,4 +3,6 @@ project(TP2_AeP C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(Zoo-Management-System main.c)
+add_executable(Zoo-Management-System
+        main.c
+        main.c)
