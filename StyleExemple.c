@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <gdiplus.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +54,7 @@ LRESULT CALLBACK AddAnimalProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 LRESULT CALLBACK FilterAnimalsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK ModifyAnimalAgeProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void DrawButton(HDC hdc, RECT* rect, LPCSTR text, BOOL isHovered);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Registrar a classe da janela
@@ -112,16 +112,97 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static BOOL isHovered[6] = {FALSE};
+
     switch (uMsg) {
         case WM_CREATE:
-            // Criar botões
-            CreateWindow("BUTTON", "Adicionar Animal", WS_VISIBLE | WS_CHILD, 10, 10, 150, 30, hwnd, (HMENU)ID_ADD_ANIMAL, NULL, NULL);
-            CreateWindow("BUTTON", "Listar Animais", WS_VISIBLE | WS_CHILD, 170, 10, 150, 30, hwnd, (HMENU)ID_LIST_ANIMALS, NULL, NULL);
-            CreateWindow("BUTTON", "Listar Tratamentos", WS_VISIBLE | WS_CHILD, 330, 10, 150, 30, hwnd, (HMENU)ID_LIST_TREATMENTS, NULL, NULL);
-            CreateWindow("BUTTON", "Filtrar Animais", WS_VISIBLE | WS_CHILD, 10, 50, 150, 30, hwnd, (HMENU)ID_FILTER_ANIMALS, NULL, NULL);
-            CreateWindow("BUTTON", "Adicionar Tratamento", WS_VISIBLE | WS_CHILD, 170, 50, 150, 30, hwnd, (HMENU)ID_ADD_TREATMENT, NULL, NULL);
-            CreateWindow("BUTTON", "Modificar Idade", WS_VISIBLE | WS_CHILD, 330, 50, 150, 30, hwnd, (HMENU)ID_MODIFY_AGE, NULL, NULL);
+            // We'll draw buttons manually, so we don't create them here
             break;
+
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+
+            // Draw background
+            HBRUSH hBrush = CreateSolidBrush(RGB(173, 216, 230));  // Light blue
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+            FillRect(hdc, &rect, hBrush);
+            DeleteObject(hBrush);
+
+            // Draw styled buttons
+            RECT buttonRects[6] = {
+                {10, 10, 160, 40},
+                {170, 10, 320, 40},
+                {330, 10, 480, 40},
+                {10, 50, 160, 80},
+                {170, 50, 320, 80},
+                {330, 50, 480, 80}
+            };
+            LPCSTR buttonTexts[6] = {
+                "Adicionar Animal",
+                "Listar Animais",
+                "Listar Tratamentos",
+                "Filtrar Animais",
+                "Adicionar Tratamento",
+                "Modificar Idade"
+            };
+
+            for (int i = 0; i < 6; i++) {
+                DrawButton(hdc, &buttonRects[i], buttonTexts[i], isHovered[i]);
+            }
+
+            EndPaint(hwnd, &ps);
+        }
+        break;
+
+        case WM_MOUSEMOVE:
+        {
+            int xPos = LOWORD(lParam);
+            int yPos = HIWORD(lParam);
+
+            RECT buttonRects[6] = {
+                {10, 10, 160, 40},
+                {170, 10, 320, 40},
+                {330, 10, 480, 40},
+                {10, 50, 160, 80},
+                {170, 50, 320, 80},
+                {330, 50, 480, 80}
+            };
+
+            for (int i = 0; i < 6; i++) {
+                BOOL newHovered = PtInRect(&buttonRects[i], (POINT){xPos, yPos});
+                if (newHovered != isHovered[i]) {
+                    isHovered[i] = newHovered;
+                    InvalidateRect(hwnd, &buttonRects[i], FALSE);
+                }
+            }
+        }
+        break;
+
+        case WM_LBUTTONDOWN:
+        {
+            int xPos = LOWORD(lParam);
+            int yPos = HIWORD(lParam);
+
+            RECT buttonRects[6] = {
+                {10, 10, 160, 40},
+                {170, 10, 320, 40},
+                {330, 10, 480, 40},
+                {10, 50, 160, 80},
+                {170, 50, 320, 80},
+                {330, 50, 480, 80}
+            };
+
+            for (int i = 0; i < 6; i++) {
+                if (PtInRect(&buttonRects[i], (POINT){xPos, yPos})) {
+                    SendMessage(hwnd, WM_COMMAND, ID_ADD_ANIMAL + i, 0);
+                    break;
+                }
+            }
+        }
+        break;
 
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
@@ -151,6 +232,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void DrawButton(HDC hdc, RECT* rect, LPCSTR text, BOOL isHovered) {
+    // Draw button background
+    HBRUSH brush = CreateSolidBrush(isHovered ? RGB(0, 102, 204) : RGB(0, 120, 215));
+    FillRect(hdc, rect, brush);
+    DeleteObject(brush);
+
+    // Draw button text
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(255, 255, 255));
+    DrawText(hdc, text, -1, rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 void AddAnimal(HWND hwnd) {
@@ -187,25 +280,30 @@ LRESULT CALLBACK AddAnimalProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
                 char name[50], family[50], species[50], ageStr[10];
                 int age;
 
-                GetDlgItemText(hwnd, 100, name, 50);
-                GetDlgItemText(hwnd, 101, family, 50);
-                GetDlgItemText(hwnd, 102, species, 50);
-                GetDlgItemText(hwnd, 103, ageStr, 10);
+                GetDlgItemText(hwnd, 100, name, sizeof(name));
+                GetDlgItemText(hwnd, 101, family, sizeof(family));
+                GetDlgItemText(hwnd, 102, species, sizeof(species));
+                GetDlgItemText(hwnd, 103, ageStr, sizeof(ageStr));
                 age = atoi(ageStr);
 
-                animal newAnimal = {animal_count + 1, "", "", "", 0};
-                strcpy(newAnimal.name, name);
-                if (strcmp(family, "Ave") == 0 || strcmp(family, "ave") == 0) {
-                    strcpy(newAnimal.family, "Ave");
-                } else if (strcmp(family, "Reptil") == 0 || strcmp(family, "reptil") == 0) {
-                    strcpy(newAnimal.family, "Reptil");
-                } else if (strcmp(family, "Mamifero") == 0 || strcmp(family, "mamifero") == 0) {
-                    strcpy(newAnimal.family, "Mamifero");
+                animal newAnimal;
+                newAnimal.id = animal_count + 1;
+                strncpy(newAnimal.name, name, sizeof(newAnimal.name) - 1);
+                newAnimal.name[sizeof(newAnimal.name) - 1] = '\0';
+
+                if (_stricmp(family, "Ave") == 0) {
+                    strncpy(newAnimal.family, "Ave", sizeof(newAnimal.family) - 1);
+                } else if (_stricmp(family, "Reptil") == 0) {
+                    strncpy(newAnimal.family, "Reptil", sizeof(newAnimal.family) - 1);
+                } else if (_stricmp(family, "Mamifero") == 0) {
+                    strncpy(newAnimal.family, "Mamifero", sizeof(newAnimal.family) - 1);
                 } else {
                     MessageBox(hwnd, "A familia inserida não é valida! Use Ave, Reptil ou Mamifero.", "Erro", MB_OK | MB_ICONERROR);
                     return 0; // Return without adding the animal
                 }
-                strcpy(newAnimal.species, species);
+                newAnimal.family[sizeof(newAnimal.family) - 1] = '\0';
+                strncpy(newAnimal.species, species, sizeof(newAnimal.species) - 1);
+                newAnimal.species[sizeof(newAnimal.species) - 1] = '\0';
                 newAnimal.age = age;
 
                 animals[animal_count++] = newAnimal;
@@ -234,7 +332,7 @@ void ListAnimals(HWND hwnd) {
 
     char buffer[256];
     for (int i = 0; i < animal_count; i++) {
-        sprintf(buffer, "ID: %d, Nome: %s, Família: %s, Espécie: %s, Idade: %d",
+        snprintf(buffer, sizeof(buffer), "ID: %d, Nome: %s, Família: %s, Espécie: %s, Idade: %d",
                 animals[i].id, animals[i].name, animals[i].family, animals[i].species, animals[i].age);
         SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)buffer);
     }
@@ -251,8 +349,9 @@ void ListTreatments(HWND hwnd) {
 
     char buffer[256];
     for (int i = 0; i < treatment_count; i++) {
-        sprintf(buffer, "ID Animal: %d, Nome: %s, Início: %s, Fim: %s, Duração: %d dias",
-                treatments[i].animal_id, treatments[i].treating_name, treatments[i].treating_start, treatments[i].treating_end, treatments[i].duration);
+        snprintf(buffer, sizeof(buffer), "ID Animal: %d, Nome: %s, Início: %s, Fim: %s, Duração: %d dias",
+                treatments[i].animal_id, treatments[i].treating_name, treatments[i].treating_start,
+                treatments[i].treating_end, treatments[i].duration);
         SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)buffer);
     }
 }
@@ -274,15 +373,15 @@ LRESULT CALLBACK FilterAnimalsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         case WM_COMMAND:
             if (LOWORD(wParam) == 1) {
                 char family[50];
-                GetDlgItemText(hwnd, 100, family, 50);
+                GetDlgItemText(hwnd, 100, family, sizeof(family));
 
                 HWND hwndList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | LBS_NOTIFY,
                                              10, 100, 780, 400, (HWND)GetWindowLongPtr(hwnd, GWLP_USERDATA), NULL, NULL, NULL);
 
                 char buffer[256];
                 for (int i = 0; i < animal_count; i++) {
-                    if (strcmp(animals[i].family, family) == 0) {
-                        sprintf(buffer, "ID: %d, Nome: %s, Família: %s, Espécie: %s, Idade: %d",
+                    if (_stricmp(animals[i].family, family) == 0) {
+                        snprintf(buffer, sizeof(buffer), "ID: %d, Nome: %s, Família: %s, Espécie: %s, Idade: %d",
                                 animals[i].id, animals[i].name, animals[i].family, animals[i].species, animals[i].age);
                         SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)buffer);
                     }
@@ -335,13 +434,13 @@ LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
             if (LOWORD(wParam) == 1) {
                 char animalIdStr[10], treatmentName[100], treating_start[20], treating_end[20], durationStr[10];
                 int animalId, duration;
-                treatment newTreatment = {0}; // Inicialize a estrutura aqui
+                treatment newTreatment = {0};
 
-                GetDlgItemText(hwnd, 100, animalIdStr, 10);
-                GetDlgItemText(hwnd, 101, treatmentName, 100);
-                GetDlgItemText(hwnd, 102, treating_start, 20);
-                GetDlgItemText(hwnd, 104, treating_end, 20);
-                GetDlgItemText(hwnd, 103, durationStr, 10);
+                GetDlgItemText(hwnd, 100, animalIdStr, sizeof(animalIdStr));
+                GetDlgItemText(hwnd, 101, treatmentName, sizeof(treatmentName));
+                GetDlgItemText(hwnd, 102, treating_start, sizeof(treating_start));
+                GetDlgItemText(hwnd, 104, treating_end, sizeof(treating_end));
+                GetDlgItemText(hwnd, 103, durationStr, sizeof(durationStr));
 
                 animalId = atoi(animalIdStr);
                 duration = atoi(durationStr);
@@ -372,8 +471,8 @@ LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
                     struct tm *tm = localtime(&t);
                     strftime(newTreatment.treating_start, sizeof(newTreatment.treating_start), "%d/%m/%Y", tm);
                 } else {
-                    // Se a data for fornecida, copie-a diretamente
-                    strcpy(newTreatment.treating_start, treating_start);
+                    strncpy(newTreatment.treating_start, treating_start, sizeof(newTreatment.treating_start) - 1);
+                    newTreatment.treating_start[sizeof(newTreatment.treating_start) - 1] = '\0';
                 }
 
                 if (strlen(treating_end) == 0) {
@@ -382,8 +481,8 @@ LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
                     struct tm *tm = localtime(&t);
                     strftime(newTreatment.treating_end, sizeof(newTreatment.treating_end), "%d/%m/%Y", tm);
                 } else {
-                    // Se a data for fornecida, copie-a diretamente
-                    strcpy(newTreatment.treating_end, treating_end);
+                    strncpy(newTreatment.treating_end, treating_end, sizeof(newTreatment.treating_end) - 1);
+                    newTreatment.treating_end[sizeof(newTreatment.treating_end) - 1] = '\0';
                 }
 
                 // Verify if the duration is positive
@@ -395,7 +494,8 @@ LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
                 newTreatment.animal_id = animalId;
                 newTreatment.duration = duration;
 
-                strcpy(newTreatment.treating_name, treatmentName);
+                strncpy(newTreatment.treating_name, treatmentName, sizeof(newTreatment.treating_name) - 1);
+                newTreatment.treating_name[sizeof(newTreatment.treating_name) - 1] = '\0';
 
                 treatments[treatment_count++] = newTreatment;
 
@@ -434,8 +534,8 @@ LRESULT CALLBACK ModifyAnimalAgeProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
                 char animalIdStr[10], newAgeStr[10];
                 int animalId, newAge;
 
-                GetDlgItemText(hwnd, 100, animalIdStr, 10);
-                GetDlgItemText(hwnd, 101, newAgeStr, 10);
+                GetDlgItemText(hwnd, 100, animalIdStr, sizeof(animalIdStr));
+                GetDlgItemText(hwnd, 101, newAgeStr, sizeof(newAgeStr));
 
                 animalId = atoi(animalIdStr);
                 newAge = atoi(newAgeStr);
@@ -476,106 +576,189 @@ int main() {
     scanf("%d", &option);
 
     if (option == 1) {
-        WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOWDEFAULT);
+        return WinMain(GetModuleHandle(NULL), NULL, GetCommandLineA(), SW_SHOWDEFAULT);
     } else if (option == 2) {
         // Implementar o modo de console aqui
         animal animals[MAX_ANIMALS];
-        animal new_animal;
         treatment treatings[MAX_TREATMENTS];
-        treatment new_treatment;
-        int animal_count=0, treating_count=0;
-        int option;
+        int animal_count = 0, treating_count = 0;
         char familyOpt[50];
 
         while (1) {
-        printf("\nSelecione a opção que deseja executar: \n");
-        printf("1-Adicionar animal\n");
-        printf("2-Listar animais\n");
-        printf("3-Listar tratamentos\n");
-        printf("4-Filtrar animais por familia\n");
-        printf("5-Adicionar tratamento\n");
-        printf("6-Modificar a idade do animal\n");
-        printf("7-Calcular somatório dos tratamentos\n");
-        printf("8-Calcular o tempo total de tratamentos por família\n");
-        printf("9-Calcular a família com menor tempo de tratamento\n");
-        printf("10-Listar tratamentos com o menor tempo de tratamento\n");
-        printf("11-Apresentação do custo total de cada tratamento\n");
-        printf("12-Sair\n");
-        printf("Opção selecionada: \n");
-        scanf("%d", &option);
+            printf("\nSelecione a opção que deseja executar: \n");
+            printf("1-Adicionar animal\n");
+            printf("2-Listar animais\n");
+            printf("3-Listar tratamentos\n");
+            printf("4-Filtrar animais por familia\n");
+            printf("5-Adicionar tratamento\n");
+            printf("6-Modificar a idade do animal\n");
+            printf("7-Calcular somatório dos tratamentos\n");
+            printf("8-Calcular o tempo total de tratamentos por família\n");
+            printf("9-Calcular a família com menor tempo de tratamento\n");
+            printf("10-Listar tratamentos com o menor tempo de tratamento\n");
+            printf("11-Apresentação do custo total de cada tratamento\n");
+            printf("12-Sair\n");
+            printf("Opção selecionada: ");
+            scanf("%d", &option);
 
-        if(option==1) {
-            if (animal_count < MAX_ANIMALS) {
-                new_animal.id = animal_count + 1;
-                printf("Insira o nome do animal:\n");
-                scanf("%s", new_animal.name);
-                printf("Insira a familia do animal:\n");
-                scanf("%s", new_animal.family);
-                printf("Insira a especie do animal:\n");
-                scanf("%s", new_animal.species);
-                printf("Insira a idade do animal:\n");
-                scanf("%d", &new_animal.age);
-                animals[animal_count++] = new_animal;
-                printf("O animal foi adicionado.\n");
-            }else {
-                printf("Nao foi adicionado devido a falta de espaço.\n");
-            }
-        }
-        else if(option==2) {
-            printf("Listagem de todos os animais:\n");
-            for (int i = 0; i < animal_count; i++) {
-                animal animalDump = animals[i];
-                printf("ID: %d, Nome: %s, Familia: %s, Especie: %s, Idade: %d\n",
-                animalDump.id, animalDump.name, animalDump.family, animalDump.species, animalDump.age);
-            }
-        }
-        else if(option==3) {
-            printf("Listagens de todos os tratamentos:\n");
-            for (int i = 0; i < treating_count; i++) {
-                treatment treatingDump = treatings[i];
-                printf("ID do animal: %d, Nome: %s, Data Começo: %s, Duração(em dias): %d\n",
-                       treatingDump.animal_id, treatingDump.treating_name, treatingDump.treating_start, treatingDump.duration);
-            }
-        }
-        else if(option==4) {
-            printf("Escolha a familia do animal que quer filtrar: \n");
-            scanf("%s", familyOpt);
-            for (int i = 0; i < animal_count; i++) {
-                if (strcmp(animals[i].family, familyOpt) == 0) {
-                    printf("ID: %d, Nome: %s, Familia: %s, Especie: %s, Idade: %d\n",
-                            animals[i].id, animals[i].name, animals[i].family, animals[i].species, animals[i].age);
+            if(option==1) {
+                if (animal_count < MAX_ANIMALS) {
+                    animal new_animal;
+                    new_animal.id = animal_count + 1;
+                    printf("Insira o nome do animal:\n");
+                    scanf("%s", new_animal.name);
+                    printf("Insira a familia do animal:\n");
+                    scanf("%s", new_animal.family);
+                    printf("Insira a especie do animal:\n");
+                    scanf("%s", new_animal.species);
+                    printf("Insira a idade do animal:\n");
+                    scanf("%d", &new_animal.age);
+                    animals[animal_count++] = new_animal;
+                    printf("O animal foi adicionado.\n");
+                }else {
+                    printf("Nao foi adicionado devido a falta de espaço.\n");
                 }
             }
-        }
-        else if(option==5) {
-            if (treating_count < MAX_TREATMENTS) {
-                printf("Insira o ID do animal:\n");
-                scanf("%d", &new_treatment.animal_id);
-                printf("Insira o nome do tratamento:\n");
-                scanf("%s", new_treatment.treating_name);
-                printf("Insira quando o tratamento começou:\n");
-                scanf("%s", new_treatment.treating_start);
-                printf("Insira a duração do tratamento (em dias):\n");
-                scanf("%d", &new_treatment.duration);
-                treatings[treating_count++] = new_treatment;
-                printf("O tratamento foi adicionado\n");
-            } else {
-                printf("Não foi possível adicionar o tratamento, pois o limite foi atingido.\n");
+            else if(option==2) {
+                printf("Listagem de todos os animais:\n");
+                for (int i = 0; i < animal_count; i++) {
+                    animal animalDump = animals[i];
+                    printf("ID: %d, Nome: %s, Familia: %s, Especie: %s, Idade: %d\n",
+                    animalDump.id, animalDump.name, animalDump.family, animalDump.species, animalDump.age);
+                }
+            }
+            else if(option==3) {
+                printf("Listagens de todos os tratamentos:\n");
+                for (int i = 0; i < treating_count; i++) {
+                    treatment treatingDump = treatings[i];
+                    printf("ID do animal: %d, Nome: %s, Data Começo: %s, Duração(em dias): %d\n",
+                           treatingDump.animal_id, treatingDump.treating_name, treatingDump.treating_start, treatingDump.duration);
+                }
+            }
+            else if(option==4) {
+                printf("Escolha a familia do animal que quer filtrar: \n");
+                scanf("%s", familyOpt);
+                for (int i = 0; i < animal_count; i++) {
+                    if (strcmp(animals[i].family, familyOpt) == 0) {
+                        printf("ID: %d, Nome: %s, Familia: %s, Especie: %s, Idade: %d\n",
+                                animals[i].id, animals[i].name, animals[i].family, animals[i].species, animals[i].age);
+                    }
+                }
+            }
+            else if(option==5) {
+                if (treating_count < MAX_TREATMENTS) {
+                    treatment new_treatment;
+                    printf("Insira o ID do animal:\n");
+                    scanf("%d", &new_treatment.animal_id);
+                    printf("Insira o nome do tratamento:\n");
+                    scanf("%s", new_treatment.treating_name);
+                    printf("Insira quando o tratamento começou:\n");
+                    scanf("%s", new_treatment.treating_start);
+                    printf("Insira a duração do tratamento (em dias):\n");
+                    scanf("%d", &new_treatment.duration);
+                    treatings[treating_count++] = new_treatment;
+                    printf("O tratamento foi adicionado\n");
+                } else {
+                    printf("Não foi possível adicionar o tratamento, pois o limite foi atingido.\n");
+                }
+            }
+            else if(option==6){
+                int id, newAge;
+                printf("Insira o ID do animal a modificar:\n");
+                scanf("%d", &id);
+                printf("Insira a nova idade:\n");
+                scanf("%d", &newAge);
+                for (int i = 0; i < animal_count; i++) {
+                    if (animals[i].id == id) {
+                        animals[i].age = newAge;
+                        printf("Idade modificada com sucesso!\n");
+                        break;
+                    }
+                }
+            }
+            else if(option==7){
+                int total_duration = 0;
+                for (int i = 0; i < treating_count; i++) {
+                    total_duration += treatings[i].duration;
+                }
+                printf("Somatório total dos tratamentos: %d dias\n", total_duration);
+            }
+            else if(option==8){
+                int ave_duration = 0, reptil_duration = 0, mamifero_duration = 0;
+                for (int i = 0; i < treating_count; i++) {
+                    for (int j = 0; j < animal_count; j++) {
+                        if (treatings[i].animal_id == animals[j].id) {
+                            if (strcmp(animals[j].family, "Ave") == 0) {
+                                ave_duration += treatings[i].duration;
+                            } else if (strcmp(animals[j].family, "Reptil") == 0) {
+                                reptil_duration += treatings[i].duration;
+                            } else if (strcmp(animals[j].family, "Mamifero") == 0) {
+                                mamifero_duration += treatings[i].duration;
+                            }
+                            break;
+                        }
+                    }
+                }
+                printf("Tempo total de tratamentos por família:\n");
+                printf("Ave: %d dias\n", ave_duration);
+                printf("Reptil: %d dias\n", reptil_duration);
+                printf("Mamifero: %d dias\n", mamifero_duration);
+            }
+            else if(option==9){
+                int ave_duration = 0, reptil_duration = 0, mamifero_duration = 0;
+                for (int i = 0; i < treating_count; i++) {
+                    for (int j = 0; j < animal_count; j++) {
+                        if (treatings[i].animal_id == animals[j].id) {
+                            if (strcmp(animals[j].family, "Ave") == 0) {
+                                ave_duration += treatings[i].duration;
+                            } else if (strcmp(animals[j].family, "Reptil") == 0) {
+                                reptil_duration += treatings[i].duration;
+                            } else if (strcmp(animals[j].family, "Mamifero") == 0) {
+                                mamifero_duration += treatings[i].duration;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (ave_duration <= reptil_duration && ave_duration <= mamifero_duration) {
+                    printf("A família com menor tempo de tratamento é Ave com %d dias.\n", ave_duration);
+                } else if (reptil_duration <= ave_duration && reptil_duration <= mamifero_duration) {
+                    printf("A família com menor tempo de tratamento é Reptil com %d dias.\n", reptil_duration);
+                } else {
+                    printf("A família com menor tempo de tratamento é Mamifero com %d dias.\n", mamifero_duration);
+                }
+            }
+            else if(option==10){
+                int min_duration = INT_MAX;
+                for (int i = 0; i < treating_count; i++) {
+                    if (treatings[i].duration < min_duration) {
+                        min_duration = treatings[i].duration;
+                    }
+                }
+                printf("Tratamentos com menor tempo de duração (%d dias):\n", min_duration);
+                for (int i = 0; i < treating_count; i++) {
+                    if (treatings[i].duration == min_duration) {
+                        printf("ID do animal: %d, Nome: %s, Data Começo: %s\n",
+                               treatings[i].animal_id, treatings[i].treating_name, treatings[i].treating_start);
+                    }
+                }
+            }
+            else if(option==11){
+                printf("Apresentação do custo total de cada tratamento:\n");
+                for (int i = 0; i < treating_count; i++) {
+                    // Assumindo um custo diário de 50 unidades monetárias
+                    int custo_total = treatings[i].duration * 50;
+                    printf("ID do animal: %d, Nome: %s, Custo total: %d unidades monetárias\n",
+                           treatings[i].animal_id, treatings[i].treating_name, custo_total);
+                }
+            }
+            else if(option==12) {
+                break;
+            }else {
+                printf("Ocorreu um erro.");
+                break;
             }
         }
-        else if(option==6){}
-        else if(option==7){}
-        else if(option==8){}
-        else if(option==9){}
-        else if(option==10){}
-        else if(option==11){}
-        else if(option==12) {
-            break;
-        }else {
-            printf("Ocorreu um erro.");
-            break;
-        }
-    }
     } else {
         printf("Opção inválida.\n");
     }

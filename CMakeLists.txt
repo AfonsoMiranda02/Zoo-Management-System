@@ -5,4 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(Zoo-Management-System
         main.c
-        main.c)
+        StyleExemple.c
+        TestMain.c
+        StyleExemple.c)
