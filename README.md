@@ -1,5 +1,3 @@
-# Zoo-Management-System
+[Figma](https://www.figma.com)
 
-[Figma](https.www.roblox.com)
-
-[Explicação do código](https://www.roblox.com/home)
+[Code Explanation](https://www.notion.com/)
