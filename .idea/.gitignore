@@ -8,3 +8,10 @@
 /dataSources.local.xml
 # Ninja build
 /build.ninja/
+# Ignore build directories
+cmake-build-*
+*.o
+*.obj
+*.exe
+*.ninja
+*.log
