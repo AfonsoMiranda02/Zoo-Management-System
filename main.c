@@ -5,6 +5,18 @@
 #include <string.h>
 #include <time.h>
 
+//Opções de librarias para estilizar
+//A GDI e o Direct2D funcionam juntos
+//#include <gdiplus.h>
+//Direct2D
+//O Nuklear e o Dear ImGui também funcionam juntos
+//Nuklear
+//Dear ImGui
+//Basicamente os 3 seguintes funcionam sozinhos
+//Qt Framework
+//GTK
+//wxWidgets
+
 #define MAX_ANIMALS 100
 #define MAX_TREATMENTS 100
 
