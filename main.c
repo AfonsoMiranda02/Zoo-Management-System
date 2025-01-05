@@ -575,12 +575,121 @@ int main() {
                 printf("Não foi possível adicionar o tratamento, pois o limite foi atingido.\n");
             }
         }
-        else if(option==6){}
-        else if(option==7){}
-        else if(option==8){}
-        else if(option==9){}
-        else if(option==10){}
-        else if(option==11){}
+        else if(option==6) {
+            int animal_id, new_age;
+            printf("Insira o ID do animal cuja idade deseja modificar: \n");
+            scanf("%d", &animal_id);
+
+            int found = 0;
+            for (int i = 0; i < animal_count; i++) {
+                if (animals[i].id == animal_id) {
+                    printf("Insira a nova idade do animal: \n");
+                    scanf("%d", &new_age);
+                    animals[i].age = new_age;
+                    printf("A idade do animal foi atualizada.\n");
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                printf("Animal com o ID fornecido não encontrado.\n");
+            }
+        }
+        else if(option==7) {
+            int total_duration = 0;
+            for (int i = 0; i < animal_count; i++) {
+                if (animals[i].age > 3) {
+                    for (int j = 0; j < treating_count; j++) {
+                        if (treatings[j].animal_id == animals[i].id) {
+                            total_duration += treatings[j].duration;
+                        }
+                    }
+                }
+            }
+            printf("O somatório dos tratamentos para animais com mais de 3 anos é: %d dias\n", total_duration);
+        }
+        else if(option==8) {
+            char familyOpt[50];
+            int total_duration = 0;
+
+            printf("Insira o nome da família: \n");
+            scanf("%s", familyOpt);
+
+            for (int i = 0; i < animal_count; i++) {
+                if (strcmp(animals[i].family, familyOpt) == 0) {
+                    for (int j = 0; j < treating_count; j++) {
+                        if (treatings[j].animal_id == animals[i].id) {
+                            total_duration += treatings[j].duration;
+                        }
+                    }
+                }
+            }
+            printf("O tempo total de tratamentos para a família %s é: %d dias\n", familyOpt, total_duration);
+        }
+        else if(option==9) {
+            char family_name[50] = "";
+            int min_duration = INT_MAX;
+
+            for (int i = 0; i < animal_count; i++) {
+                int family_duration = 0;
+
+                for (int j = 0; j < treating_count; j++) {
+                    if (treatings[j].animal_id == animals[i].id) {
+                        family_duration += treatings[j].duration;
+                    }
+                }
+
+                if (family_duration < min_duration) {
+                    min_duration = family_duration;
+                    strcpy(family_name, animals[i].family);
+                }
+            }
+            if (strlen(family_name) > 0) {
+                printf("A família com menor tempo de tratamento é: %s com %d dias\n", family_name, min_duration);
+            } else {
+                printf("Não foi possível determinar a família com menor tempo de tratamento.\n");
+            }
+        }
+        else if(option==10) {
+            char start_date[20], end_date[20];
+
+            printf("Insira a data inicial (formato YYYY-MM-DD): \n");
+            scanf("%s", start_date);
+            printf("Insira a data final (formato YYYY-MM-DD): \n");
+            scanf("%s", end_date);
+
+            printf("Tratamentos iniciados entre %s e %s:\n", start_date, end_date);
+
+            for (int i = 0; i < treating_count; i++) {
+                if (strcmp(treatings[i].treating_start, start_date) >= 0 && strcmp(treatings[i].treating_start, end_date) <= 0) {
+                    printf("ID do animal: %d, Nome: %s, Data Início: %s, Duração: %d dias\n",
+                           treatings[i].animal_id, treatings[i].treating_name, treatings[i].treating_start, treatings[i].duration);
+                }
+            }
+        }
+        else if(option==11) {
+            float total_cost = 0.0;
+
+            for (int i = 0; i < treating_count; i++) {
+                for (int j = 0; j < animal_count; j++) {
+                    if (animals[j].id == treatings[i].animal_id) {
+                        float cost_per_day = 0.0;
+
+                        if (strcmp(animals[j].family, "Aves") == 0) {
+                            cost_per_day = 100.05;
+                        } else if (strcmp(animals[j].family, "Répteis") == 0) {
+                            cost_per_day = 120.50;
+                        } else if (strcmp(animals[j].family, "Mamíferos") == 0) {
+                            cost_per_day = 180.20;
+                        }
+
+                        total_cost += cost_per_day * treatings[i].duration;
+                        break;
+                    }
+                }
+            }
+            printf("O custo total de todos os tratamentos é: %.2f€\n", total_cost);
+        }
         else if(option==12) {
             break;
         }else {
