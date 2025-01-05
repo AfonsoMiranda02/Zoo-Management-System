@@ -1,21 +1,14 @@
 #include <windows.h>
-#include <gdiplus.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 
-//Opções de librarias para estilizar
-//A GDI e o Direct2D funcionam juntos
-//#include <gdiplus.h>
-//Direct2D
-//O Nuklear e o Dear ImGui também funcionam juntos
-//Nuklear
-//Dear ImGui
-//Basicamente os 3 seguintes funcionam sozinhos
-//Qt Framework
-//GTK
-//wxWidgets
+//Basicamente não conseguimos arranjar uma libraria para estilizar a nossa UI mas temos
+// O git hub:https://github.com/AfonsoMiranda02/Zoo-Management-System
+// Tambem temos extras como o Figma que está no README.dm do repositório
+// Tal como queria-mos colocar uma pequena explicação do código para facilitar mas não tivemos tempo
 
 #define MAX_ANIMALS 100
 #define MAX_TREATMENTS 100
@@ -27,9 +20,10 @@
 #define ID_FILTER_ANIMALS 4
 #define ID_ADD_TREATMENT 5
 #define ID_MODIFY_AGE 6
-
-// Definindo o ID do ícone
-#define IDI_ICON 101
+#define ID_CALC_PLUS_TREATMENT 7
+#define ID_CALC_TIME_TREATMENT_F 8
+#define ID_LIST_TREATMENT 9
+#define ID_FILTER_TREATMENT_COST 10
 
 typedef struct {
     int id;
@@ -63,10 +57,16 @@ void ListTreatments(HWND hwnd);
 void FilterAnimals(HWND hwnd);
 void AddTreatment(HWND hwnd);
 void ModifyAnimalAge(HWND hwnd);
+void CalcPlusTreatment(HWND hwnd);
+void CalcTimeTreatmentF(HWND hwnd);
+void ListTreatment(HWND hwnd);
+void FilterTreatmentCost(HWND hwnd);
 LRESULT CALLBACK AddAnimalProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK FilterAnimalsProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK AddTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK ModifyAnimalAgeProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK CalcTimeTreatmentFProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK ListTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Registrar a classe da janela
@@ -76,15 +76,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-
-    // Carregar o ícone do recurso
-    hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
-    if (hIcon) {
-        wc.hIcon = hIcon;
-    } else {
-        // Se falhar ao carregar o ícone personalizado, use o ícone padrão do sistema
-        wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    }
 
     RegisterClass(&wc);
 
@@ -133,6 +124,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             CreateWindow("BUTTON", "Filtrar Animais", WS_VISIBLE | WS_CHILD, 10, 50, 150, 30, hwnd, (HMENU)ID_FILTER_ANIMALS, NULL, NULL);
             CreateWindow("BUTTON", "Adicionar Tratamento", WS_VISIBLE | WS_CHILD, 170, 50, 150, 30, hwnd, (HMENU)ID_ADD_TREATMENT, NULL, NULL);
             CreateWindow("BUTTON", "Modificar Idade", WS_VISIBLE | WS_CHILD, 330, 50, 150, 30, hwnd, (HMENU)ID_MODIFY_AGE, NULL, NULL);
+            CreateWindow("BUTTON", "Calc Plus Treatment", WS_VISIBLE | WS_CHILD, 10, 90, 150, 30, hwnd, (HMENU)ID_CALC_PLUS_TREATMENT, NULL, NULL);
+            CreateWindow("BUTTON", "Calc Time Treatment F", WS_VISIBLE | WS_CHILD, 170, 90, 150, 30, hwnd, (HMENU)ID_CALC_TIME_TREATMENT_F, NULL, NULL);
+            CreateWindow("BUTTON", "List Treatment", WS_VISIBLE | WS_CHILD, 330, 90, 150, 30, hwnd, (HMENU)ID_LIST_TREATMENT, NULL, NULL);
+            CreateWindow("BUTTON", "Filter Treatment Cost", WS_VISIBLE | WS_CHILD, 10, 130, 150, 30, hwnd, (HMENU)ID_FILTER_TREATMENT_COST, NULL, NULL);
             break;
 
         case WM_COMMAND:
@@ -155,6 +150,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 case ID_MODIFY_AGE:
                     ModifyAnimalAge(hwnd);
                     break;
+                case ID_CALC_PLUS_TREATMENT:
+                    CalcPlusTreatment(hwnd);
+                    break;
+                case ID_CALC_TIME_TREATMENT_F:
+                    CalcTimeTreatmentF(hwnd);
+                    break;
+                case ID_LIST_TREATMENT:
+                    ListTreatment(hwnd);
+                    break;
+                case ID_FILTER_TREATMENT_COST:
+                    FilterTreatmentCost(hwnd);
+                    break;
             }
             break;
 
@@ -164,6 +171,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
+
 
 void AddAnimal(HWND hwnd) {
     if (animal_count >= MAX_ANIMALS) {
@@ -242,7 +250,7 @@ void ListAnimals(HWND hwnd) {
     }
 
     HWND hwndList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | LBS_NOTIFY,
-                                 10, 100, 780, 400, hwnd, NULL, NULL, NULL);
+                                 10, 170, 780, 380, hwnd, NULL, NULL, NULL);
 
     char buffer[256];
     for (int i = 0; i < animal_count; i++) {
@@ -479,6 +487,145 @@ LRESULT CALLBACK ModifyAnimalAgeProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
     return 0;
 }
 
+void CalcPlusTreatment(HWND hwnd) {
+    int total_duration = 0;
+    for (int i = 0; i < animal_count; i++) {
+        if (animals[i].age > 3) {
+            for (int j = 0; j < treatment_count; j++) {
+                if (treatments[j].animal_id == animals[i].id) {
+                    total_duration += treatments[j].duration;
+                }
+            }
+        }
+    }
+    char message[100];
+    sprintf(message, "O somatório dos tratamentos para animais com mais de 3 anos é: %d dias", total_duration);
+    MessageBox(hwnd, message, "Resultado", MB_OK | MB_ICONINFORMATION);
+}
+
+void CalcTimeTreatmentF(HWND hwnd) {
+    HWND hwndDialog = CreateWindow("STATIC", "Calcular Tempo de Tratamento por Família", WS_VISIBLE | WS_OVERLAPPEDWINDOW, 100, 100, 300, 150, hwnd, NULL, NULL, NULL);
+
+    CreateWindow("STATIC", "Família:", WS_VISIBLE | WS_CHILD, 10, 10, 80, 20, hwndDialog, NULL, NULL, NULL);
+    CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 100, 10, 180, 20, hwndDialog, (HMENU)100, NULL, NULL);
+
+    CreateWindow("BUTTON", "Calcular", WS_VISIBLE | WS_CHILD, 100, 50, 100, 30, hwndDialog, (HMENU)1, NULL, NULL);
+
+    SetWindowLongPtr(hwndDialog, GWLP_USERDATA, (LONG_PTR)hwnd);
+    SetWindowLongPtr(hwndDialog, GWLP_WNDPROC, (LONG_PTR)CalcTimeTreatmentFProc);
+}
+
+LRESULT CALLBACK CalcTimeTreatmentFProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_COMMAND:
+            if (LOWORD(wParam) == 1) {
+                char familyOpt[50];
+                int total_duration = 0;
+
+                GetDlgItemText(hwnd, 100, familyOpt, 50);
+
+                for (int i = 0; i < animal_count; i++) {
+                    if (strcmp(animals[i].family, familyOpt) == 0) {
+                        for (int j = 0; j < treatment_count; j++) {
+                            if (treatments[j].animal_id == animals[i].id) {
+                                total_duration += treatments[j].duration;
+                            }
+                        }
+                    }
+                }
+
+                char message[100];
+                sprintf(message, "O tempo total de tratamentos para a família %s é: %d dias", familyOpt, total_duration);
+                MessageBox(hwnd, message, "Resultado", MB_OK | MB_ICONINFORMATION);
+
+                DestroyWindow(hwnd);
+            }
+            break;
+        case WM_CLOSE:
+            DestroyWindow(hwnd);
+            break;
+        default:
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+    return 0;
+}
+
+void ListTreatment(HWND hwnd) {
+    HWND hwndDialog = CreateWindow("STATIC", "Listar Tratamentos", WS_VISIBLE | WS_OVERLAPPEDWINDOW, 100, 100, 400, 300, hwnd, NULL, NULL, NULL);
+
+    CreateWindow("STATIC", "Data Inicial (YYYY-MM-DD):", WS_VISIBLE | WS_CHILD, 10, 10, 150, 20, hwndDialog, NULL, NULL, NULL);
+    CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 170, 10, 100, 20, hwndDialog, (HMENU)100, NULL, NULL);
+
+    CreateWindow("STATIC", "Data Final (YYYY-MM-DD):", WS_VISIBLE | WS_CHILD, 10, 40, 150, 20, hwndDialog, NULL, NULL, NULL);
+    CreateWindow("EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER, 170, 40, 100, 20, hwndDialog, (HMENU)101, NULL, NULL);
+
+    CreateWindow("BUTTON", "Listar", WS_VISIBLE | WS_CHILD, 150, 70, 100, 30, hwndDialog, (HMENU)1, NULL, NULL);
+
+    HWND hwndList = CreateWindow("LISTBOX", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | LBS_NOTIFY,
+                                 10, 110, 380, 180, hwndDialog, NULL, NULL, NULL);
+
+    SetWindowLongPtr(hwndDialog, GWLP_USERDATA, (LONG_PTR)hwndList);
+    SetWindowLongPtr(hwndDialog, GWLP_WNDPROC, (LONG_PTR)ListTreatmentProc);
+}
+
+LRESULT CALLBACK ListTreatmentProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        case WM_COMMAND:
+            if (LOWORD(wParam) == 1) {
+                char start_date[20], end_date[20];
+                GetDlgItemText(hwnd, 100, start_date, 20);
+                GetDlgItemText(hwnd, 101, end_date, 20);
+
+                HWND hwndList = (HWND)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+                SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+
+                char buffer[256];
+                for (int i = 0; i < treatment_count; i++) {
+                    if (strcmp(treatments[i].treating_start, start_date) >= 0 && strcmp(treatments[i].treating_start, end_date) <= 0) {
+                        sprintf(buffer, "ID do animal: %d, Nome: %s, Data Início: %s, Duração: %d dias",
+                                treatments[i].animal_id, treatments[i].treating_name, treatments[i].treating_start, treatments[i].duration);
+                        SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)buffer);
+                    }
+                }
+            }
+            break;
+        case WM_CLOSE:
+            DestroyWindow(hwnd);
+            break;
+        default:
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+    return 0;
+}
+
+void FilterTreatmentCost(HWND hwnd) {
+    float total_cost = 0.0;
+
+    for (int i = 0; i < treatment_count; i++) {
+        for (int j = 0; j < animal_count; j++) {
+            if (animals[j].id == treatments[i].animal_id) {
+                float cost_per_day = 0.0;
+
+                if (strcmp(animals[j].family, "Aves") == 0) {
+                    cost_per_day = 100.05;
+                } else if (strcmp(animals[j].family, "Répteis") == 0) {
+                    cost_per_day = 120.50;
+                } else if (strcmp(animals[j].family, "Mamíferos") == 0) {
+                    cost_per_day = 180.20;
+                }
+
+                total_cost += cost_per_day * treatments[i].duration;
+                break;
+            }
+        }
+    }
+
+    char message[100];
+    sprintf(message, "O custo total de todos os tratamentos é: %.2f€", total_cost);
+    MessageBox(hwnd, message, "Resultado", MB_OK | MB_ICONINFORMATION);
+}
+
+
 int main() {
     int option;
     printf("Selecione o modo em que deseja executar:\n");
@@ -575,7 +722,7 @@ int main() {
                 printf("Não foi possível adicionar o tratamento, pois o limite foi atingido.\n");
             }
         }
-        else if(option==6) {
+else if(option==6) {
             int animal_id, new_age;
             printf("Insira o ID do animal cuja idade deseja modificar: \n");
             scanf("%d", &animal_id);
